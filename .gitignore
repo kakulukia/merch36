@@ -1,1 +1,6 @@
 database
+.DS_Store
+*.pyc
+.idea
+db.sqlite
+static
