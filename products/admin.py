@@ -1,4 +1,5 @@
 # coding=utf-8
+from decimal import Decimal
 from django.contrib import admin
 from django.template.defaultfilters import date as date_format
 
@@ -6,6 +7,7 @@ from products.models import Imprint, Price, Sale, Color, Product, Size, Sex, Del
 
 
 class SaleAdmin(admin.ModelAdmin):
+    search_fields = ['product__name']
     list_display = [
         'purchase_date',
         'get_week_day',
@@ -17,9 +19,10 @@ class SaleAdmin(admin.ModelAdmin):
         'employee_discount',
         'number',
         'price',
+        'get_sum',
         'user',
     ]
-    readonly_fields = ['get_week_day']
+    readonly_fields = ['get_week_day', 'get_sum']
     list_filter = [
         'product__name',
         'sex__name',
@@ -45,16 +48,28 @@ class SaleAdmin(admin.ModelAdmin):
                 'employee_discount',
                 'number',
                 'price',
+                'get_sum',
                 'user',
             )
         }),
     )
 
-    def get_week_day(self, obj):
-        if not obj.purchase_date:
+    def get_week_day(self, sale):
+        if not sale.purchase_date:
             return '-'
-        return date_format(obj.purchase_date, 'l')
+        return date_format(sale.purchase_date, 'l')
     get_week_day.short_description = 'Wochentag'
+
+    def get_sum(self, sale):
+
+        if sale.number and sale.price:
+            sale_sum = Decimal(sale.price.price) * sale.number
+            if sale.employee_discount:
+                sale_sum /= 2
+            return '<strong>%s€</strong>' % sale_sum
+        return '-'
+    get_sum.short_description = 'Summe'
+    get_sum.allow_tags = True
 
 
 class DeliveryAdmin(admin.ModelAdmin):
