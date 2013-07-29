@@ -151,7 +151,9 @@ class Sale(BaseModel):
             items_sold = sales.aggregate(sum=Sum('number'))['sum'] if sales else 0
 
             if items_sold + self.number > items_in_store:
-                raise forms.ValidationError(u'Nicht geügend Ware vorhanden! Bitte vorher die Lieferungen aufnehmen.')
+                raise forms.ValidationError(
+                    u'Nicht geügend Ware vorhanden (%s)! '
+                    u'Bitte vorher die Lieferungen aufnehmen.' % items_in_store - items_sold)
 
 
 class Delivery(BaseModel):
