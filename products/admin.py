@@ -1,13 +1,27 @@
 # coding=utf-8
 from decimal import Decimal
 from django.contrib import admin
+from django import forms
 from django.template.defaultfilters import date as date_format
 
 from products.models import Imprint, Price, Sale, Color, Product, Size, Sex, Delivery
 
 
+class SaleForm(forms.ModelForm):
+
+    class Meta:
+        model = Sale
+
+    def clean_number(self):
+        data = self.cleaned_data
+        if not data['number']:
+            raise forms.ValidationError('Das lohnt nicht ..')
+
+        return data
+
+
 class SaleAdmin(admin.ModelAdmin):
-    search_fields = ['product__name']
+    search_fields = ['product__name', 'notes']
     list_display = [
         'purchase_date',
         'get_week_day',
@@ -50,9 +64,12 @@ class SaleAdmin(admin.ModelAdmin):
                 'price',
                 'get_sum',
                 'user',
+
+                'notes',
             )
         }),
     )
+    form = SaleForm
 
     def get_week_day(self, sale):
         if not sale.purchase_date:

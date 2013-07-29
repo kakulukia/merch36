@@ -5,6 +5,10 @@ from django.db import models
 
 # basic model stuff
 ##########################################
+from django.db.models import Sum
+from django.forms import forms
+
+
 class BaseModelManager(models.Manager):
 
     def get_query_set(self):
@@ -110,6 +114,7 @@ class Sale(BaseModel):
     price = models.ForeignKey(Price, verbose_name='Preis')
 
     user = models.ForeignKey(User, verbose_name='Mitarbeiter')
+    notes = models.TextField('Notizen', blank=True, null=True)
 
     class Meta:
         ordering = ['-purchase_date']
@@ -118,6 +123,35 @@ class Sale(BaseModel):
 
     def __unicode__(self):
         return u'%s - %sx %s' % (self.purchase_date, self.number, self.product)
+
+    def clean(self):
+        if self.sex and self.size and self.product and\
+                self.color and self.imprint and self.number:
+
+            # calculate storage numbers
+            deliveries = Delivery.data.filter(
+                product=self.product,
+                size=self.size,
+                sex=self.sex,
+                color=self.color,
+                imprint=self.imprint
+            )
+            sales = Sale.data.filter(
+                product=self.product,
+                size=self.size,
+                sex=self.sex,
+                color=self.color,
+                imprint=self.imprint
+            )
+
+            if self.id:
+                sales = sales.exclude(id=self.id)
+
+            items_in_store = deliveries.aggregate(sum=Sum('number'))['sum'] if deliveries else 0
+            items_sold = sales.aggregate(sum=Sum('number'))['sum'] if sales else 0
+
+            if items_sold + self.number > items_in_store:
+                raise forms.ValidationError(u'Nicht geügend Ware vorhanden! Bitte vorher die Lieferungen aufnehmen.')
 
 
 class Delivery(BaseModel):
