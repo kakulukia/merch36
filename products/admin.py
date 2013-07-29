@@ -17,7 +17,7 @@ class SaleForm(forms.ModelForm):
         if not data['number']:
             raise forms.ValidationError('Das lohnt nicht ..')
 
-        return data
+        return data.get('number')
 
 
 class SaleAdmin(admin.ModelAdmin):
