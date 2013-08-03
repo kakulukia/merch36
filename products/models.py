@@ -104,7 +104,7 @@ class Price(BaseModel):
 
 class Sale(BaseModel):
     product = models.ForeignKey(Product, verbose_name='Produkt')
-    sex = models.ForeignKey(Sex)
+    sex = models.ForeignKey(Sex, verbose_name='Sex')
     size = models.ForeignKey(Size, verbose_name=u'Größe')
     color = models.ForeignKey(Color, verbose_name='Farbe')
     imprint = models.ForeignKey(Imprint, verbose_name='Aufdruck')

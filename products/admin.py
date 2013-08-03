@@ -38,12 +38,12 @@ class SaleAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ['get_week_day', 'get_sum']
     list_filter = [
-        'product__name',
-        'sex__name',
-        'size__name',
-        'color__name',
-        'imprint__name',
-        'user__username',
+        'product',
+        'sex',
+        'size',
+        'color',
+        'imprint',
+        'user',
         'purchase_date',
     ]
     date_hierarchy = 'purchase_date'
@@ -100,7 +100,7 @@ class DeliveryAdmin(admin.ModelAdmin):
         'number',
     ]
     list_filter = [
-        'product__name',
+        'product',
         'delivery_date',
     ]
     actions = None
