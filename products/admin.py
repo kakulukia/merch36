@@ -82,7 +82,7 @@ class SaleAdmin(admin.ModelAdmin):
         if sale.number and sale.price:
             sale_sum = Decimal(sale.price.price) * sale.number
             if sale.employee_discount:
-                sale_sum /= 2
+                sale_sum *= Decimal(sale.product.discount) / 100
             return '<strong>%s€</strong>' % sale_sum
         return '-'
     get_sum.short_description = 'Summe'

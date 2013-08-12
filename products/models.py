@@ -1,4 +1,6 @@
 # coding=utf-8
+from datetime import datetime, date
+from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -9,10 +11,10 @@ from django.db.models import Sum
 from django.forms import forms
 
 
-class BaseModelManager(models.Manager):
+class BaseDataManager(models.Manager):
 
     def get_query_set(self):
-        qs = super(BaseModelManager, self).get_query_set()
+        qs = super(BaseDataManager, self).get_query_set()
         return qs.filter(active=True)
 
 
@@ -31,7 +33,7 @@ class BaseModel(models.Model):
     active = models.BooleanField(default=True, editable=False)
 
     # access only active data
-    data = BaseModelManager()
+    data = BaseDataManager()
     # access all data
     objects = BaseModelManagerAll()
 
@@ -58,6 +60,8 @@ class NamedModel(models.Model):
 
 # actual models for the project
 class Product(BaseModel, NamedModel):
+    discount = models.IntegerField('Rabatt (%)', default=50)
+
     class Meta:
         verbose_name = 'Produkt'
         verbose_name_plural = 'Produkte'
@@ -102,6 +106,18 @@ class Price(BaseModel):
         return unicode(u'%s€' % self.price)
 
 
+class SalesManager(BaseDataManager):
+
+    def get_sum_for_current_year(self):
+        year_sum = Decimal()
+        for s in self.filter(created__gte=date(datetime.now().year, 1, 1)).prefetch_related('price', 'product'):
+            cur_sum = Decimal(s.price.price) * s.number
+            if s.employee_discount:
+                cur_sum *= Decimal(s.product.discount) / 100
+            year_sum += cur_sum
+        return year_sum
+
+
 class Sale(BaseModel):
     product = models.ForeignKey(Product, verbose_name='Produkt')
     sex = models.ForeignKey(Sex, verbose_name='Sex')
@@ -115,6 +131,8 @@ class Sale(BaseModel):
 
     user = models.ForeignKey(User, verbose_name='Mitarbeiter')
     notes = models.TextField('Notizen', blank=True, null=True)
+
+    data = SalesManager()
 
     class Meta:
         ordering = ['-purchase_date']
