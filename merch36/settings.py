@@ -141,7 +141,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
 
-    'products.context_processors.sales_sum'
+    # 'products.context_processors.sales_sum'
 )
 
 CACHES = {

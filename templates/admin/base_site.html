@@ -1,5 +1,8 @@
 {% extends 'admin/base.html' %}
 
 {% block branding %}
-<h1 id="site-name">Merch36 - Gesamtumsatz {{ sales_year }}: {{ sales_sum }}€</h1>
+<h1 id="site-name">Merch36
+    {% if sales_year %}
+         - Gesamtumsatz {{ sales_year }}: {{ sales_sum }}€</h1>
+    {% endif %}
 {% endblock %}

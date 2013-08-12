@@ -1,5 +1,6 @@
 # coding=utf-8
 from decimal import Decimal
+from datetime import datetime
 from django.contrib import admin
 from django import forms
 from django.template.defaultfilters import date as date_format
@@ -87,6 +88,15 @@ class SaleAdmin(admin.ModelAdmin):
         return '-'
     get_sum.short_description = 'Summe'
     get_sum.allow_tags = True
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context.update({
+            'sales_sum': Sale.data.get_sum_for_current_year(),
+            'sales_year': datetime.now().year
+        })
+        print 'updating'
+        return super(SaleAdmin, self).changelist_view(request, extra_context=extra_context)
 
 
 class DeliveryAdmin(admin.ModelAdmin):

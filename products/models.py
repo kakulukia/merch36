@@ -2,6 +2,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 
 
@@ -109,13 +110,18 @@ class Price(BaseModel):
 class SalesManager(BaseDataManager):
 
     def get_sum_for_current_year(self):
-        year_sum = Decimal()
-        for s in self.filter(created__gte=date(datetime.now().year, 1, 1)).prefetch_related('price', 'product'):
-            cur_sum = Decimal(s.price.price) * s.number
-            if s.employee_discount:
-                cur_sum *= Decimal(s.product.discount) / 100
-            year_sum += cur_sum
-        return year_sum
+        sales_sum = cache.get('sales_sum')
+
+        if not sales_sum:
+            sales_sum = Decimal()
+            for s in self.filter(created__gte=date(datetime.now().year, 1, 1)).prefetch_related('price', 'product'):
+                cur_sum = Decimal(s.price.price) * s.number
+                if s.employee_discount:
+                    cur_sum *= Decimal(s.product.discount) / 100
+                sales_sum += cur_sum
+            cache.set('sales_sum', sales_sum, 60*60)
+
+        return sales_sum
 
 
 class Sale(BaseModel):
