@@ -1,6 +1,7 @@
 # coding=utf-8
 from decimal import Decimal
 from datetime import datetime
+import autocomplete_light
 from django.contrib import admin
 from django import forms
 from django.template.defaultfilters import date as date_format
@@ -33,11 +34,11 @@ class SaleAdmin(admin.ModelAdmin):
         'imprint',
         'employee_discount',
         'number',
-        'price',
+        'get_price',
         'get_sum',
         'user',
     ]
-    readonly_fields = ['get_week_day', 'get_sum']
+    readonly_fields = ['get_week_day', 'get_sum', 'user', 'get_price']
     list_filter = [
         'product',
         'sex',
@@ -62,7 +63,7 @@ class SaleAdmin(admin.ModelAdmin):
                 'get_week_day',
                 'employee_discount',
                 'number',
-                'price',
+                'get_price',
                 'get_sum',
                 'user',
 
@@ -80,10 +81,11 @@ class SaleAdmin(admin.ModelAdmin):
 
     def get_sum(self, sale):
 
-        if sale.number and sale.price:
-            sale_sum = Decimal(sale.price.price) * sale.number
+        if sale.number and sale.product:
             if sale.employee_discount:
-                sale_sum *= Decimal(sale.product.discount) / 100
+                sale_sum = Decimal(sale.product.employee_price.price) * sale.number
+            else:
+                sale_sum = Decimal(sale.product.price.price) * sale.number
             return '<strong>%s€</strong>' % sale_sum
         return '-'
     get_sum.short_description = 'Summe'
@@ -97,6 +99,19 @@ class SaleAdmin(admin.ModelAdmin):
         })
         print 'updating'
         return super(SaleAdmin, self).changelist_view(request, extra_context=extra_context)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.user_id:
+            obj.user = request.user
+        obj.save()
+
+    def get_price(self, obj):
+        if obj.employee_discount:
+            return obj.product.employee_price
+        else:
+            return obj.product.price
+    get_price.short_description = 'Preis'
+    get_price.admin_order_field = 'product__price'
 
 
 class DeliveryAdmin(admin.ModelAdmin):
@@ -116,9 +131,12 @@ class DeliveryAdmin(admin.ModelAdmin):
     actions = None
 
 
+class ProductAdmin(admin.ModelAdmin):
+    form = autocomplete_light.modelform_factory(Product)
+
 admin.site.register(Sex)
 admin.site.register(Size)
-admin.site.register(Product)
+admin.site.register(Product, ProductAdmin)
 admin.site.register(Imprint)
 admin.site.register(Price)
 admin.site.register(Color)

@@ -10,6 +10,7 @@ from django.db import models
 ##########################################
 from django.db.models import Sum
 from django.forms import forms
+from smart_selects.db_fields import ChainedForeignKey
 
 
 class BaseDataManager(models.Manager):
@@ -61,7 +62,14 @@ class NamedModel(models.Model):
 
 # actual models for the project
 class Product(BaseModel, NamedModel):
-    discount = models.IntegerField('Rabatt (%)', default=50)
+
+    sizes = models.ManyToManyField('Size', verbose_name=u'Größen')
+    sexes = models.ManyToManyField('Sex', verbose_name='Sex')
+    colors = models.ManyToManyField('Color', verbose_name='Farben')
+
+    price = models.ForeignKey('Price', verbose_name='Preis')
+    employee_price = models.ForeignKey('Price', verbose_name='Mitarbeiter-Preis',
+                                       related_name='employee_products')
 
     class Meta:
         verbose_name = 'Produkt'
@@ -69,6 +77,7 @@ class Product(BaseModel, NamedModel):
 
 
 class Sex(BaseModel, NamedModel):
+
     class Meta:
         verbose_name = 'Sex'
         verbose_name_plural = 'Sex'
@@ -114,10 +123,11 @@ class SalesManager(BaseDataManager):
 
         if not sales_sum:
             sales_sum = Decimal()
-            for s in self.filter(created__gte=date(datetime.now().year, 1, 1)).prefetch_related('price', 'product'):
-                cur_sum = Decimal(s.price.price) * s.number
+            for s in self.filter(created__gte=date(datetime.now().year, 1, 1)).prefetch_related('product'):
                 if s.employee_discount:
-                    cur_sum *= Decimal(s.product.discount) / 100
+                    cur_sum = Decimal(s.product.employee_price.price) * s.number
+                else:
+                    cur_sum = Decimal(s.product.price.price) * s.number
                 sales_sum += cur_sum
             cache.set('sales_sum', sales_sum, 60*60)
 
@@ -126,16 +136,33 @@ class SalesManager(BaseDataManager):
 
 class Sale(BaseModel):
     product = models.ForeignKey(Product, verbose_name='Produkt')
-    sex = models.ForeignKey(Sex, verbose_name='Sex')
-    size = models.ForeignKey(Size, verbose_name=u'Größe')
-    color = models.ForeignKey(Color, verbose_name='Farbe')
+    sex = ChainedForeignKey(
+        Sex,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
+    size = ChainedForeignKey(
+        Size,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
+    color = ChainedForeignKey(
+        Color,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
     imprint = models.ForeignKey(Imprint, verbose_name='Aufdruck')
     purchase_date = models.DateField('Datum')
     employee_discount = models.BooleanField('Mitarbeiter-Rabatt')
     number = models.IntegerField('Anzahl')
-    price = models.ForeignKey(Price, verbose_name='Preis')
 
-    user = models.ForeignKey(User, verbose_name='Mitarbeiter')
+    user = models.ForeignKey(User, verbose_name='Mitarbeiter', editable=False)
     notes = models.TextField('Notizen', blank=True, null=True)
 
     data = SalesManager()
@@ -185,9 +212,28 @@ class Delivery(BaseModel):
     delivery_date = models.DateField('Lieferdatum')
 
     product = models.ForeignKey(Product, verbose_name='Produkt')
-    sex = models.ForeignKey(Sex)
-    size = models.ForeignKey(Size, verbose_name=u'Größe')
-    color = models.ForeignKey(Color, verbose_name='Farbe')
+
+    sex = ChainedForeignKey(
+        Sex,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
+    size = ChainedForeignKey(
+        Size,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
+    color = ChainedForeignKey(
+        Color,
+        chained_field="product",
+        chained_model_field="product",
+        show_all=False,
+        auto_choose=True
+    )
     imprint = models.ForeignKey(Imprint, verbose_name='Aufdruck')
     number = models.IntegerField('Anzahl')
 
